@@ -1,11 +1,7 @@
 const { ApolloServer } = require('apollo-server');
-const { PrismaClient } = require('@prisma/client');
-
-// Instance Prisma pour la base de données
-const prisma = new PrismaClient();
 
 // Import dynamique des modules compilés avec gestion d'erreur
-let loadAllModels, authMiddleware;
+let loadAllModels, authMiddleware, PrismaClient;
 
 try {
   const loaderModule = require('../dist/models/loader');
@@ -34,6 +30,37 @@ try {
   console.error('❌ Erreur lors du chargement de l\'auth:', error);
   // Fallback pour le développement
   authMiddleware = async () => ({ user: null });
+}
+
+try {
+  PrismaClient = require('@prisma/client').PrismaClient;
+} catch (error) {
+  console.error('❌ Erreur lors du chargement de Prisma:', error);
+  // Fallback pour le développement
+  PrismaClient = class MockPrismaClient {
+    constructor() {
+      console.log('⚠️ Utilisation du mock Prisma Client');
+    }
+    // Méthodes mock basiques
+    user = { findMany: () => [], findUnique: () => null, create: () => null };
+    product = { findMany: () => [], findUnique: () => null, create: () => null };
+  };
+}
+
+// Instance Prisma pour la base de données (avec gestion d'erreur)
+let prisma;
+try {
+  prisma = new PrismaClient();
+  console.log('✅ Prisma Client initialisé avec succès');
+} catch (error) {
+  console.error('❌ Erreur lors de l\'initialisation de Prisma:', error);
+  prisma = new (class MockPrismaClient {
+    constructor() {
+      console.log('⚠️ Utilisation du mock Prisma Client');
+    }
+    user = { findMany: () => [], findUnique: () => null, create: () => null };
+    product = { findMany: () => [], findUnique: () => null, create: () => null };
+  })();
 }
 
 // Chargement automatique de tous les modèles
