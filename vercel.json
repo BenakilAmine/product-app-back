@@ -10,14 +10,6 @@
       "dest": "api/health.js"
     },
     {
-      "src": "/graphql-simple",
-      "dest": "api/graphql-simple.js"
-    },
-    {
-      "src": "/graphql-fixed",
-      "dest": "api/graphql-fixed.js"
-    },
-    {
       "src": "/(.*)",
       "dest": "api/index.js"
     }
@@ -31,8 +23,6 @@
     },
     "api/health.js": {
       "maxDuration": 10
-    },
-    "api/graphql-fixed.js": { "maxDuration": 30 },
-    "api/graphql-simple.js": { "maxDuration": 30 }
+    }
   }
 }
