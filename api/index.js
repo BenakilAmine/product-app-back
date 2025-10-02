@@ -1,23 +1,63 @@
 const { ApolloServer } = require('apollo-server');
 
-// Import dynamique des modules compilés avec gestion d'erreur
-let loadAllModels, authMiddleware, PrismaClient;
+// Configuration minimale pour éviter les timeouts
+let prisma = null;
+let isPrismaReady = false;
+
+// Initialisation asynchrone de Prisma
+async function initializePrisma() {
+  if (isPrismaReady) return prisma;
+  
+  try {
+    const { PrismaClient } = require('@prisma/client');
+    prisma = new PrismaClient({
+      // Configuration optimisée pour Vercel
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL
+        }
+      },
+      // Réduction des logs pour éviter les timeouts
+      log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+    });
+    
+    // Test de connexion rapide
+    await prisma.$connect();
+    isPrismaReady = true;
+    console.log('✅ Prisma Client initialisé avec succès');
+    return prisma;
+  } catch (error) {
+    console.error('❌ Erreur Prisma:', error.message);
+    // Fallback mock
+    prisma = {
+      user: { findMany: () => [], findUnique: () => null, create: () => null },
+      product: { findMany: () => [], findUnique: () => null, create: () => null },
+      $disconnect: () => {}
+    };
+    isPrismaReady = true;
+    return prisma;
+  }
+}
+
+// Import dynamique des modules avec fallback
+let loadAllModels, authMiddleware;
 
 try {
   const loaderModule = require('../dist/models/loader');
   loadAllModels = loaderModule.loadAllModels;
 } catch (error) {
-  console.error('❌ Erreur lors du chargement du loader:', error);
-  // Fallback pour le développement
+  console.error('❌ Erreur loader:', error.message);
   loadAllModels = () => ({ 
     allTypeDefs: `
       type Query {
         health: String
+        test: String
       }
     `, 
     allResolvers: {
       Query: {
-        health: () => 'API GraphQL fonctionne'
+        health: () => 'API GraphQL fonctionne',
+        test: () => 'Test endpoint OK'
       }
     }
   });
@@ -27,66 +67,46 @@ try {
   const authModule = require('../dist/middleware/auth');
   authMiddleware = authModule.authMiddleware;
 } catch (error) {
-  console.error('❌ Erreur lors du chargement de l\'auth:', error);
-  // Fallback pour le développement
+  console.error('❌ Erreur auth:', error.message);
   authMiddleware = async () => ({ user: null });
 }
 
-try {
-  PrismaClient = require('@prisma/client').PrismaClient;
-} catch (error) {
-  console.error('❌ Erreur lors du chargement de Prisma:', error);
-  // Fallback pour le développement
-  PrismaClient = class MockPrismaClient {
-    constructor() {
-      console.log('⚠️ Utilisation du mock Prisma Client');
-    }
-    // Méthodes mock basiques
-    user = { findMany: () => [], findUnique: () => null, create: () => null };
-    product = { findMany: () => [], findUnique: () => null, create: () => null };
-  };
-}
-
-// Instance Prisma pour la base de données (avec gestion d'erreur)
-let prisma;
-try {
-  prisma = new PrismaClient();
-  console.log('✅ Prisma Client initialisé avec succès');
-} catch (error) {
-  console.error('❌ Erreur lors de l\'initialisation de Prisma:', error);
-  prisma = new (class MockPrismaClient {
-    constructor() {
-      console.log('⚠️ Utilisation du mock Prisma Client');
-    }
-    user = { findMany: () => [], findUnique: () => null, create: () => null };
-    product = { findMany: () => [], findUnique: () => null, create: () => null };
-  })();
-}
-
-// Chargement automatique de tous les modèles
+// Chargement des modèles
 const { allTypeDefs, allResolvers } = loadAllModels();
 
-// Configuration du serveur Apollo avec authentification
+// Configuration Apollo Server optimisée
 const server = new ApolloServer({
   typeDefs: allTypeDefs,
   resolvers: allResolvers,
   context: async ({ req }) => {
-    console.log('🔍 Contexte Apollo Server - Headers:', req?.headers);
-    console.log('🔍 Contexte Apollo Server - Authorization:', req?.headers?.authorization);
+    // Initialisation Prisma en arrière-plan
+    const prismaInstance = await initializePrisma();
     
-    // Appliquer le middleware d'authentification
+    // Contexte minimal pour éviter les timeouts
     const authContext = await authMiddleware(req);
     
-    const finalContext = { ...authContext, prisma };
-    
-    return finalContext;
+    return { 
+      ...authContext, 
+      prisma: prismaInstance 
+    };
   },
-  introspection: process.env.NODE_ENV !== 'production',
+  introspection: true, // Activé pour le debugging
+  playground: true, // Activé pour le debugging
   formatError: (error) => {
-    console.error('Erreur GraphQL:', error);
-    return error;
+    console.error('GraphQL Error:', error.message);
+    return {
+      message: error.message,
+      locations: error.locations,
+      path: error.path
+    };
   },
+  // Configuration pour éviter les timeouts
+  cacheControl: {
+    defaultMaxAge: 0,
+    stripFormattedExtensions: false,
+    calculateHttpHeaders: false
+  }
 });
 
-// Export pour Vercel - Apollo Server v3
+// Export pour Vercel
 module.exports = server;
