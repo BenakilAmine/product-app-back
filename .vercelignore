@@ -14,5 +14,4 @@ yarn-error.log*
 *.swp
 *.swo
 *~
-src
 prisma/migrations
