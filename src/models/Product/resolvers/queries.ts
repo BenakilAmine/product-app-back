@@ -30,7 +30,9 @@ export const productQueries = {
         throw new Error('Authentification requise pour voir les produits admin');
       }
 
-      const where = user.role === 'SUPER_ADMIN' ? undefined : { userId: user.id };
+      // ADMIN et SUPER_ADMIN voient tout
+      const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+      const where = isAdmin ? undefined : { userId: user.id };
 
       const products = await prisma.product.findMany({
         where,

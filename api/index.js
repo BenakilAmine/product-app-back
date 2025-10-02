@@ -67,6 +67,8 @@ const server = new ApolloServer({
   },
   introspection: true,
   playground: true,
+  cache: 'bounded',
+  persistedQueries: false,
   cacheControl: { defaultMaxAge: 0 }
 });
 

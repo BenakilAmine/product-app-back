@@ -15,7 +15,8 @@
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "seed": "ts-node seed-products.ts",
-    "seed:reset": "ts-node seed-products.ts"
+    "seed:reset": "ts-node seed-products.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
