@@ -23,8 +23,23 @@ async function initializePrisma() {
   } catch (error) {
     console.error('❌ Erreur Prisma:', error.message);
     prisma = {
-      user: { findMany: () => [], findUnique: () => null, create: () => null },
-      product: { findMany: () => [], findUnique: () => null, create: () => null },
+      user: { 
+        findMany: () => [], 
+        findUnique: () => null, 
+        create: () => null,
+        update: () => null,
+        delete: () => null,
+        count: () => 0
+      },
+      product: { 
+        findMany: () => [], 
+        findUnique: () => null, 
+        findFirst: () => null,
+        create: () => null,
+        update: () => null,
+        delete: () => null,
+        count: () => 0
+      },
       $disconnect: () => {}
     };
     isPrismaReady = true;

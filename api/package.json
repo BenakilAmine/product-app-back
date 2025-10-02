@@ -2,6 +2,9 @@
   "name": "api",
   "version": "1.0.0",
   "main": "index.js",
+  "scripts": {
+    "postinstall": "prisma generate"
+  },
   "dependencies": {
     "apollo-server": "^3.13.0",
     "apollo-server-micro": "^3.13.0",
