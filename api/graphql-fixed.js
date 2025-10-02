@@ -1,6 +1,6 @@
-const { ApolloServer, gql } = require('apollo-server');
+const { ApolloServer, gql } = require('apollo-server-micro');
+const { send } = require('micro');
 
-// Schema GraphQL minimal sans Prisma
 const typeDefs = gql`
   type Query {
     health: String
@@ -8,19 +8,8 @@ const typeDefs = gql`
     users: [User]
     products: [Product]
   }
-  
-  type User {
-    id: ID!
-    email: String!
-    role: String!
-  }
-  
-  type Product {
-    id: ID!
-    name: String!
-    price: Float!
-    description: String
-  }
+  type User { id: ID!, email: String!, role: String! }
+  type Product { id: ID!, name: String!, price: Float!, description: String }
 `;
 
 const resolvers = {
@@ -38,33 +27,26 @@ const resolvers = {
   }
 };
 
-// Configuration Apollo Server optimisée pour Vercel
 const server = new ApolloServer({
   typeDefs,
   resolvers,
   introspection: true,
   playground: true,
-  context: ({ req }) => {
-    console.log('🔍 Contexte GraphQL - Headers:', req?.headers);
-    return {
-      // Contexte minimal sans Prisma pour éviter les timeouts
-      user: null,
-      timestamp: new Date().toISOString()
-    };
-  },
-  formatError: (error) => {
-    console.error('GraphQL Error:', error.message);
-    return {
-      message: error.message,
-      locations: error.locations,
-      path: error.path
-    };
-  },
-  // Configuration pour éviter les timeouts
-  cacheControl: {
-    defaultMaxAge: 0
-  }
+  cacheControl: { defaultMaxAge: 0 }
 });
 
-// Export pour Vercel
-module.exports = server;
+const startServer = server.start ? server.start() : Promise.resolve();
+
+module.exports = async (req, res) => {
+  if (req.url === '/' && req.method === 'GET') { return send(res, 200, { status: 'OK', hint: 'Utilisez /graphql-fixed' }); }
+  if (req.url === '/favicon.ico') { res.statusCode = 204; return res.end(); }
+
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') { res.statusCode = 200; return res.end(); }
+
+  await startServer;
+  const handler = server.createHandler({ path: '/graphql-fixed' });
+  return handler(req, res);
+};

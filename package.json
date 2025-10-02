@@ -20,6 +20,8 @@
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "apollo-server": "^3.13.0",
+    "apollo-server-micro": "^3.13.0",
+    "micro": "^9.4.1",
     "graphql": "^16.11.0",
     "graphql-tag": "^2.12.6",
     "jsonwebtoken": "^9.0.2",

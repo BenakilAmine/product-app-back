@@ -31,6 +31,8 @@
     },
     "api/health.js": {
       "maxDuration": 10
-    }
+    },
+    "api/graphql-fixed.js": { "maxDuration": 30 },
+    "api/graphql-simple.js": { "maxDuration": 30 }
   }
 }
