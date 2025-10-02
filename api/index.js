@@ -1,4 +1,5 @@
-const { ApolloServer } = require('apollo-server');
+const express = require('express');
+const { ApolloServer } = require('apollo-server-express');
 const { loadAllModels } = require('../dist/models/loader');
 const { PrismaClient } = require('@prisma/client');
 const { authMiddleware } = require('../dist/middleware/auth');
@@ -8,6 +9,9 @@ const prisma = new PrismaClient();
 
 // Chargement automatique de tous les modèles
 const { allTypeDefs, allResolvers } = loadAllModels();
+
+// Configuration Express
+const app = express();
 
 // Configuration du serveur Apollo avec authentification
 const server = new ApolloServer({
@@ -31,5 +35,13 @@ const server = new ApolloServer({
   },
 });
 
+// Fonction pour démarrer le serveur
+async function startServer() {
+  await server.start();
+  server.applyMiddleware({ app, path: '/' });
+  
+  return app;
+}
+
 // Export pour Vercel
-module.exports = server.createHandler();
+module.exports = startServer();

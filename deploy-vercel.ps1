@@ -16,3 +16,9 @@ Write-Host "🚀 Déploiement sur Vercel..." -ForegroundColor Yellow
 vercel --prod --force
 
 Write-Host "✅ Déploiement terminé !" -ForegroundColor Green
+Write-Host ""
+Write-Host "🔗 Votre API GraphQL sera disponible sur :" -ForegroundColor Cyan
+Write-Host "   https://votre-projet.vercel.app" -ForegroundColor White
+Write-Host ""
+Write-Host "📝 Testez avec cette requête :" -ForegroundColor Cyan
+Write-Host "   query { products { id name price } }" -ForegroundColor White
