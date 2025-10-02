@@ -1,17 +1,43 @@
-const express = require('express');
-const { ApolloServer } = require('apollo-server-express');
-const { loadAllModels } = require('../dist/models/loader');
+const { ApolloServer } = require('apollo-server');
 const { PrismaClient } = require('@prisma/client');
-const { authMiddleware } = require('../dist/middleware/auth');
 
 // Instance Prisma pour la base de données
 const prisma = new PrismaClient();
 
+// Import dynamique des modules compilés avec gestion d'erreur
+let loadAllModels, authMiddleware;
+
+try {
+  const loaderModule = require('../dist/models/loader');
+  loadAllModels = loaderModule.loadAllModels;
+} catch (error) {
+  console.error('❌ Erreur lors du chargement du loader:', error);
+  // Fallback pour le développement
+  loadAllModels = () => ({ 
+    allTypeDefs: `
+      type Query {
+        health: String
+      }
+    `, 
+    allResolvers: {
+      Query: {
+        health: () => 'API GraphQL fonctionne'
+      }
+    }
+  });
+}
+
+try {
+  const authModule = require('../dist/middleware/auth');
+  authMiddleware = authModule.authMiddleware;
+} catch (error) {
+  console.error('❌ Erreur lors du chargement de l\'auth:', error);
+  // Fallback pour le développement
+  authMiddleware = async () => ({ user: null });
+}
+
 // Chargement automatique de tous les modèles
 const { allTypeDefs, allResolvers } = loadAllModels();
-
-// Configuration Express
-const app = express();
 
 // Configuration du serveur Apollo avec authentification
 const server = new ApolloServer({
@@ -35,13 +61,5 @@ const server = new ApolloServer({
   },
 });
 
-// Fonction pour démarrer le serveur
-async function startServer() {
-  await server.start();
-  server.applyMiddleware({ app, path: '/' });
-  
-  return app;
-}
-
-// Export pour Vercel
-module.exports = startServer();
+// Export pour Vercel - Apollo Server v3
+module.exports = server;
