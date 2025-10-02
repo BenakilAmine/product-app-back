@@ -1,4 +1,4 @@
-import { gql } from 'apollo-server';
+import { gql } from 'graphql-tag';
 import { productTypeDefs, productResolvers } from './Product';
 
 // Schéma de base GraphQL

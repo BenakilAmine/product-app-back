@@ -1,4 +1,4 @@
-import { gql } from 'apollo-server';
+import { gql } from 'graphql-tag';
 
 // Schéma GraphQL spécifique au modèle Product
 export const productTypeDefs = gql`

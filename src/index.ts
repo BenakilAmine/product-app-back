@@ -27,7 +27,6 @@ const server = new ApolloServer({
     return finalContext;
   },
   introspection: process.env.NODE_ENV !== 'production',
-  // playground: process.env.NODE_ENV !== 'production',
   formatError: (error) => {
     console.error('Erreur GraphQL:', error);
     return error;
